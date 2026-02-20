@@ -1,82 +1,135 @@
-// src/pages/SignIn.jsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase";
+import Navbar from "../components/Navbar";
 
 export default function SignIn() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleEmailSignIn = async () => {
     setLoading(true);
+
     try {
-      const response = await fetch('http://localhost:5000/api/auth/signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
 
-      const data = await response.json();
-
-      if (data.success) {
-        // Save custom token to localStorage or state
-        localStorage.setItem('token', data.token);
-        alert('Signed in successfully!');
-        navigate('/dashboard');
-      } else {
-        alert(data.error);
+      if (!userCredential.user.emailVerified) {
+        alert("Please verify your email first.");
+        setLoading(false);
+        return;
       }
 
+      navigate("/connect-binance");
     } catch (error) {
-      alert("Sign in failed: " + error.message);
+      alert(error.message);
     } finally {
       setLoading(false);
     }
   };
 
+  /* ================= STYLES ================= */
+
+  const pageStyle = {
+    minHeight: "100vh",
+    background: "linear-gradient(135deg,#0f172a,#0b0f1a)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: "20px"
+  };
+
+  const cardStyle = {
+    width: "100%",
+    maxWidth: "420px",
+    background: "rgba(20,25,40,0.75)",
+    backdropFilter: "blur(15px)",
+    borderRadius: "16px",
+    padding: "40px 30px",
+    border: "1px solid rgba(255,255,255,0.08)",
+    boxShadow: "0 10px 40px rgba(0,0,0,0.4)",
+    color: "#fff"
+  };
+
+  const inputStyle = {
+    width: "100%",
+    padding: "14px",
+    borderRadius: "10px",
+    border: "1px solid rgba(255,255,255,0.1)",
+    background: "#111827",
+    color: "#fff",
+    marginBottom: "15px",
+    fontSize: "14px"
+  };
+
+  const buttonStyle = {
+    width: "100%",
+    padding: "14px",
+    borderRadius: "10px",
+    border: "none",
+    background: "#2563eb",
+    color: "#fff",
+    fontWeight: 600,
+    fontSize: "15px",
+    cursor: "pointer",
+    transition: "0.3s"
+  };
+
+  const linkStyle = {
+    color: "#3b82f6",
+    cursor: "pointer",
+    fontWeight: 500
+  };
+
   return (
-    <div className="bg-animated min-h-screen text-white flex flex-col">
+    <>
       <Navbar />
-      <div className="flex-1 flex justify-center items-center px-4">
-        <div className="bg-[#121826] p-10 rounded-2xl shadow-xl border border-gray-800 w-full max-w-md">
-          <h2 className="text-3xl font-bold text-center mb-8 text-blue-500">
-            Sign In to TradeOn
-          </h2>
 
-          <div className="flex flex-col gap-6 mb-6">
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="p-4 rounded-lg bg-[#0f172a] border border-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="p-4 rounded-lg bg-[#0f172a] border border-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-            />
-            <button
-              onClick={handleEmailSignIn}
-              disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 transition-all py-3 rounded-lg font-semibold text-lg"
-            >
-              {loading ? 'Signing In...' : 'Sign In'}
-            </button>
-          </div>
-
-          <p className="text-gray-400 mt-6 text-center">
-            Don’t have an account?{' '}
-            <span className="text-blue-500 hover:text-blue-400 cursor-pointer" onClick={() => navigate('/signup')}>
-              Sign Up
-            </span>
+      <div style={pageStyle}>
+        <div style={cardStyle}>
+          <h2 style={{ marginBottom: 10 }}>Welcome Back</h2>
+          <p style={{ color: "#9ca3af", marginBottom: 30 }}>
+            Sign in to access your trading dashboard
           </p>
+
+          <input
+            type="email"
+            placeholder="Email Address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={inputStyle}
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={inputStyle}
+          />
+
+          <button
+            onClick={handleEmailSignIn}
+            style={buttonStyle}
+            disabled={loading}
+          >
+            {loading ? "Signing In..." : "Sign In"}
+          </button>
+
+          <div style={{ marginTop: 20, textAlign: "center", color: "#9ca3af" }}>
+            Don’t have an account?{" "}
+            <span style={linkStyle} onClick={() => navigate("/signup")}>
+              Create Account
+            </span>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

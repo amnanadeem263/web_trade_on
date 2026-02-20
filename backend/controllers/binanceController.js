@@ -5,12 +5,14 @@ const crypto = require("crypto");
 const { db } = require("../firebaseAdmin");
 const { encrypt, decrypt } = require("../utils/encryption");
 
-// Sign Binance request
+/* ================= SIGN REQUEST ================= */
+
 const signQuery = (query, secret) => {
   return crypto.createHmac("sha256", secret).update(query).digest("hex");
 };
 
-// Get Futures Account Info
+/* ================= GET FUTURES ACCOUNT ================= */
+
 const getFuturesAccount = async (apiKey, secretKey) => {
   const timestamp = Date.now();
   const query = `timestamp=${timestamp}`;
@@ -25,9 +27,10 @@ const getFuturesAccount = async (apiKey, secretKey) => {
   return response.data;
 };
 
-// CONNECT BINANCE
+/* ================= CONNECT BINANCE ================= */
+
 const connectBinance = async (req, res) => {
-  const { apiKey, secretKey, riskSettings } = req.body;
+  const { apiKey, secretKey } = req.body;
 
   if (!apiKey || !secretKey) {
     return res.status(400).json({
@@ -44,28 +47,39 @@ const connectBinance = async (req, res) => {
 
     const uid = req.user.uid;
 
-    await db.collection("binanceConnections").doc(uid).set({
-      apiKey: encrypt(apiKey.trim()),
-      secretKey: encrypt(secretKey.trim()),
-      riskSettings,
-      createdAt: new Date()
-    });
+    /* ===== SAVE INSIDE USERS COLLECTION (CORRECT STRUCTURE) ===== */
+
+    await db.collection("users").doc(uid).set(
+      {
+        binance: {
+          apiKey: encrypt(apiKey.trim()),
+          secretKey: encrypt(secretKey.trim()),
+          connected: true,
+          connectedAt: new Date()
+        }
+      },
+      { merge: true }
+    );
+
+    /* ===== FILTER DATA SAFELY ===== */
+
+    const openPositions = (account.positions || []).filter(
+      p => Math.abs(Number(p.positionAmt || 0)) > 0
+    );
+
+    const activeAssets = (account.assets || []).filter(
+      a => Number(a.walletBalance || 0) > 0
+    );
 
     return res.json({
       success: true,
-      perms: {
-        canTrade: account.canTrade,
-        canWithdraw: account.canWithdraw
-      },
       summary: {
         totalWalletBalance: account.totalWalletBalance,
         totalMarginBalance: account.totalMarginBalance,
         availableBalance: account.availableBalance,
         totalUnrealizedProfit: account.totalUnrealizedProfit,
-        totalMaintMargin: account.totalMaintMargin,
-        totalInitialMargin: account.totalInitialMargin,
-        assets: account.assets,
-        positions: account.positions
+        positions: openPositions,
+        assets: activeAssets
       }
     });
 
@@ -77,39 +91,47 @@ const connectBinance = async (req, res) => {
   }
 };
 
-// CHECK STATUS
+/* ================= CHECK STATUS ================= */
+
 const checkStatus = async (req, res) => {
   const uid = req.user.uid;
 
-  const doc = await db.collection("binanceConnections").doc(uid).get();
+  const doc = await db.collection("users").doc(uid).get();
 
-  if (!doc.exists) {
+  if (!doc.exists || !doc.data().binance) {
     return res.json({ connected: false });
   }
 
-  const data = doc.data();
-
   try {
-    const apiKey = decrypt(data.apiKey);
-    const secretKey = decrypt(data.secretKey);
+    const binanceData = doc.data().binance;
 
-    const account = await getFuturesAccount(apiKey, secretKey);
+    const decryptedKey = decrypt(binanceData.apiKey);
+    const decryptedSecret = decrypt(binanceData.secretKey);
+
+    const account = await getFuturesAccount(
+      decryptedKey,
+      decryptedSecret
+    );
+
+    /* ===== SAFE FILTERING ===== */
+
+    const openPositions = (account.positions || []).filter(
+      p => Math.abs(Number(p.positionAmt || 0)) > 0
+    );
+
+    const activeAssets = (account.assets || []).filter(
+      a => Number(a.walletBalance || 0) > 0
+    );
 
     return res.json({
       connected: true,
-      perms: {
-        canTrade: account.canTrade,
-        canWithdraw: account.canWithdraw
-      },
       summary: {
         totalWalletBalance: account.totalWalletBalance,
         totalMarginBalance: account.totalMarginBalance,
         availableBalance: account.availableBalance,
         totalUnrealizedProfit: account.totalUnrealizedProfit,
-        totalMaintMargin: account.totalMaintMargin,
-        totalInitialMargin: account.totalInitialMargin,
-        assets: account.assets,
-        positions: account.positions
+        positions: openPositions,
+        assets: activeAssets
       }
     });
 
@@ -121,11 +143,15 @@ const checkStatus = async (req, res) => {
   }
 };
 
-// DISCONNECT
+/* ================= DISCONNECT ================= */
+
 const disconnectBinance = async (req, res) => {
-  await db.collection("binanceConnections")
-    .doc(req.user.uid)
-    .delete();
+  await db.collection("users").doc(req.user.uid).set(
+    {
+      binance: null
+    },
+    { merge: true }
+  );
 
   res.json({ success: true });
 };
