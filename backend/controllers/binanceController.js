@@ -27,7 +27,9 @@ const getFuturesAccount = async (apiKey, secretKey) => {
   return response.data;
 };
 
-/* ================= CONNECT BINANCE ================= */
+
+
+/* ================= CONNECT BINANCE + START BOT ================= */
 
 const connectBinance = async (req, res) => {
   const { apiKey, secretKey } = req.body;
@@ -47,39 +49,47 @@ const connectBinance = async (req, res) => {
 
     const uid = req.user.uid;
 
-    /* ===== SAVE INSIDE USERS COLLECTION (CORRECT STRUCTURE) ===== */
-
+    // Save encrypted keys
     await db.collection("users").doc(uid).set(
       {
         binance: {
           apiKey: encrypt(apiKey.trim()),
           secretKey: encrypt(secretKey.trim()),
           connected: true,
-          connectedAt: new Date()
+          connectedAt: new Date(),
+          botRunning: true
         }
       },
       { merge: true }
     );
 
-    /* ===== FILTER DATA SAFELY ===== */
-
-    const openPositions = (account.positions || []).filter(
-      p => Math.abs(Number(p.positionAmt || 0)) > 0
-    );
-
-    const activeAssets = (account.assets || []).filter(
-      a => Number(a.walletBalance || 0) > 0
+    // Start Python Bot
+    await axios.post(
+      `${process.env.PY_TRADE_URL}/start-bot`,
+      {
+        uid,
+        apiKey: apiKey.trim(),
+        secretKey: secretKey.trim()
+      },
+      {
+        headers: {
+          "X-API-KEY": process.env.PY_API_KEY
+        },
+        timeout: 20000
+      }
     );
 
     return res.json({
       success: true,
+      connected: true,
+      botRunning: true,
       summary: {
         totalWalletBalance: account.totalWalletBalance,
         totalMarginBalance: account.totalMarginBalance,
         availableBalance: account.availableBalance,
         totalUnrealizedProfit: account.totalUnrealizedProfit,
-        positions: openPositions,
-        assets: activeAssets
+        positions: account.positions || [],
+        assets: account.assets || []
       }
     });
 
@@ -102,9 +112,9 @@ const checkStatus = async (req, res) => {
     return res.json({ connected: false });
   }
 
-  try {
-    const binanceData = doc.data().binance;
+  const binanceData = doc.data().binance;
 
+  try {
     const decryptedKey = decrypt(binanceData.apiKey);
     const decryptedSecret = decrypt(binanceData.secretKey);
 
@@ -113,31 +123,23 @@ const checkStatus = async (req, res) => {
       decryptedSecret
     );
 
-    /* ===== SAFE FILTERING ===== */
-
-    const openPositions = (account.positions || []).filter(
-      p => Math.abs(Number(p.positionAmt || 0)) > 0
-    );
-
-    const activeAssets = (account.assets || []).filter(
-      a => Number(a.walletBalance || 0) > 0
-    );
-
     return res.json({
       connected: true,
+      botRunning: binanceData.botRunning || false,
       summary: {
         totalWalletBalance: account.totalWalletBalance,
         totalMarginBalance: account.totalMarginBalance,
         availableBalance: account.availableBalance,
         totalUnrealizedProfit: account.totalUnrealizedProfit,
-        positions: openPositions,
-        assets: activeAssets
+        positions: account.positions || [],
+        assets: account.assets || []
       }
     });
 
   } catch (error) {
-    return res.status(400).json({
+    return res.json({
       connected: true,
+      botRunning: false,
       error: "Failed to fetch Binance account"
     });
   }
@@ -146,14 +148,26 @@ const checkStatus = async (req, res) => {
 /* ================= DISCONNECT ================= */
 
 const disconnectBinance = async (req, res) => {
-  await db.collection("users").doc(req.user.uid).set(
-    {
-      binance: null
-    },
+  const uid = req.user.uid;
+
+  try {
+    await axios.post(
+      `${process.env.PY_TRADE_URL}/stop-bot`,
+      { uid },
+      {
+        headers: { "X-API-KEY": process.env.PY_API_KEY }
+      }
+    );
+  } catch (e) {
+    console.log("Python stop bot failed");
+  }
+
+  await db.collection("users").doc(uid).set(
+    { binance: null },
     { merge: true }
   );
 
-  res.json({ success: true });
+  res.json({ success: true, connected: false, botRunning: false });
 };
 
 module.exports = {

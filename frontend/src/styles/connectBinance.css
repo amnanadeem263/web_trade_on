@@ -1,0 +1,177 @@
+/* ================= GLOBAL DARK THEME ================= */
+
+body {
+  margin: 0;
+  font-family: "Inter", sans-serif;
+  background: linear-gradient(135deg, #0b1220, #0e1a2b, #0b1220) !important;
+  color: #ffffff !important;
+}
+
+/* Remove any old light background */
+html, #root {
+  background: transparent !important;
+}
+
+/* ================= PAGE CONTAINER ================= */
+
+.tradeon-page {
+  min-height: 100vh;
+  padding: 40px 20px;
+  background: transparent;
+}
+
+.tradeon-container {
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+/* ================= GLASS CARD ================= */
+
+.glass-card {
+  background: rgba(17, 25, 40, 0.85);
+  backdrop-filter: blur(20px);
+  border-radius: 18px;
+  padding: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+  margin-bottom: 30px;
+}
+
+/* ================= HEADINGS ================= */
+
+h1, h2, h3 {
+  color: #ffffff;
+}
+
+/* ================= STATUS BADGE ================= */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(34, 197, 94, 0.15);
+  padding: 8px 16px;
+  border-radius: 20px;
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.status-badge.red {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+/* ================= INPUT ================= */
+
+.tradeon-input {
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: #111827;
+  color: white;
+  margin-right: 15px;
+  width: 250px;
+}
+
+/* ================= BUTTONS ================= */
+
+.btn-primary {
+  padding: 14px 22px;
+  border-radius: 10px;
+  border: none;
+  background: #3b82f6;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.btn-primary:hover {
+  opacity: 0.85;
+}
+
+.btn-danger {
+  background: #ef4444;
+}
+
+/* ================= SUMMARY GRID ================= */
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(250px,1fr));
+  gap: 25px;
+}
+
+.summary-card {
+  background: rgba(17,25,40,0.9);
+  padding: 25px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+}
+
+/* Make grey labels visible */
+.summary-card p {
+  color: #e5e510;
+  font-size: 14px;
+}
+
+.summary-card h2 {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* ================= TABS ================= */
+
+.tradeon-tabs {
+  margin-top: 40px;
+  margin-bottom: 20px;
+}
+
+.tradeon-tab {
+  margin-right: 30px;
+  cursor: pointer;
+  padding-bottom: 8px;
+  font-weight: 600;
+  border-bottom: 3px solid transparent;
+  transition: 0.3s;
+  color: #cbd5e1;
+}
+
+.tradeon-tab.active {
+  border-bottom: 3px solid #3b82f6;
+  color: #ffffff;
+}
+
+/* ================= TABLE ================= */
+
+.tradeon-table-header,
+.tradeon-table-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding: 18px;
+}
+
+.tradeon-table-header {
+  font-size: 13px;
+  color: #94a3b8;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.tradeon-table-row {
+  font-size: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: #ffffff;
+}
+
+/* ================= PNL COLORS ================= */
+
+.pnl-positive {
+  color: #22c55e;
+}
+
+.pnl-negative {
+  color: #ef4444;
+}
+
+
